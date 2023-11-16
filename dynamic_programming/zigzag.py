@@ -1,47 +1,89 @@
-'''
-first state
-1 difference  catching two 2 numbers
-save current sign
-could be (+) or (-)
-test next difference (close to or far to)
-if they have similar signs add zero
-'''
+from tabulate import tabulate
 
-'''
-second state
-2 difference  catching two 3 numbers
-could be (+)(-)
-could be (-)(+)
-adding one 
-possible structure
-'''
+# # first testing with tabulation
+def zig_zag_tabulation(seq, idx_a,idx_b, prev_sign):
+    
+    dic = [[None]*(idx_a+1) for i in range(idx_b+1)]
 
-'''
-saving a dictionary
-2 differences
-c-b , b-a
-dic[a_i, b_i, c_i] = [0,1]
-'''
+    for i in range(idx_a+1):
+        for j in range(idx_b+1):
+            
+            # base state
+            out_of_range = (idx_a==0 or idx_b==0)
+            no_decreasing = (idx_a > idx_b)
+            equal_indices = idx_a == idx_b
 
-'''
-dependency
-if signs are different (sucesful state) (dep)
-decomposing
+            # first state
+            dif = seq[idx_b-1] - seq[idx_a-1]
 
-decompose step
+            if(out_of_range or no_decreasing or equal_indices):
+                dic[idx_a][idx_b] = 0
 
-dic[a_i-1, b_i, c_i] + 1 or 
-dic[a_i, b_i-1, c_i] + 1 or 
-dic[a_i, b_i, c_i-1] + 1
+            elif(dif != 0):
+                # update prev_sign
+                if((prev_sign == '*') or (prev_sign == "+" and dif < 0) or (prev_sign == "-" and dif > 0)):
+                    prev_sign = '-' if (dif < 0) else '+'
+                    dic[idx_a][idx_b] = dic[idx_a -1][idx_a] + 1
+                else:
+                    # keep previous sign idx_b with the previous call
+                    dic[idx_a][idx_b] = max( dic[idx_a-1][idx_b], dic[idx_a][idx_b-1] )
 
-'''
+            else:
+                # keep previous sign idx_b with the previous call
+                dic[idx_a][idx_b] = max( dic[idx_a-1][idx_b], dic[idx_a][idx_b-1] )
+    
+    return dic[idx_a][idx_b], dic
 
-'''
-possible states
-and none index should be equal
-(a_i, b_i, c_i) should be ascending order
-a_i < b_i < c_i
+# second testing with memoization
+def zig_zag_memoization(seq, idx_a,idx_b, prev_sign,dic):
+    # base state
+    out_of_range = (idx_a==0 or idx_b==0)
+    no_decreasing = (idx_a > idx_b)
+    
+    # first state
+    dif = seq[idx_b-1] - seq[idx_a-1]
 
-choose maximum possible state
-max(dic[a_i - 1, b_i, c_i],dic[a_i, b_i-1, c_i],dic[a_i, b_i, c_i-1])
-'''
+    if(out_of_range or no_decreasing):
+        return 0
+
+    # reuse state
+    if(dic[idx_a][idx_b] != -1):
+        return dic[idx_a][idx_b]
+    
+    if(dif != 0):        
+        if((prev_sign == '*') or (prev_sign == "+" and dif < 0) or (prev_sign == "-" and dif > 0)):
+            # update prev_sign
+            prev_sign = '-' if (dif < 0) else '+'
+            dic[idx_a][idx_b] = zig_zag_memoization(seq,idx_a -1,idx_a,prev_sign,dic) + 1
+        else:
+            # keep previous sign idx_b with the previous call
+            dic[idx_a][idx_b] = max( zig_zag_memoization(seq, idx_a-1, idx_b,prev_sign,dic), zig_zag_memoization(seq, idx_a, idx_b-1,prev_sign,dic) )
+    
+    else:
+        # keep previous sign idx_b with the previous call
+        dic[idx_a][idx_b] = max( zig_zag_memoization(seq, idx_a-1, idx_b,prev_sign,dic), zig_zag_memoization(seq, idx_a, idx_b-1,prev_sign,dic) )
+    
+    return dic[idx_a][idx_b]
+
+if __name__  == '__main__':
+    sequence = [374, 40, 854, 203, 203, 156, 362, 279, 812, 955, 
+600, 947, 978, 46, 100, 953, 670, 862, 568, 188, 
+67, 669, 810, 704, 52, 861, 49, 640, 370, 908, 
+477, 245, 413, 109, 659, 401, 483, 308, 609, 120, 
+249, 22, 176, 279, 23, 22, 617, 462, 459, 244]
+    lenseq = len(sequence)
+    headers = list(range(1,lenseq+1))
+    print("using memoization")
+    
+    dic = [[-1 for i in range(lenseq+1)] for j in range(lenseq+1)]
+    print("Length of zigzag seq: ", zig_zag_memoization(sequence, lenseq,lenseq,"*",dic)+1)
+    print(tabulate(dic,headers=["#"] + headers, showindex=["#"]+headers))
+    print()
+
+    # print("using tabulation")
+    # lenseq = len(sequence)
+    # res, dic = zig_zag_tabulation(sequence, lenseq-1,lenseq,"*")
+    # print("Length of zigzag seq: ", res)
+    # print(tabulate(dic,headers=["#"] + sequence, showindex=["#"]+sequence))
+    # print()
+    
